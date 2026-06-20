@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/simulations.css') }}">
+{% endblock %}
+{% block content %}
+<section class="sim-breadcrumb">
+  <a href="{{ url_for('simulations_page') }}">← All simulations</a>
+</section>
+
+<section class="sim-overview-hero">
+  <div class="flex flex-wrap items-start gap-5">
+    <div class="sim-attack-icon sim-attack-icon-lg">{{ attack.icon }}</div>
+    <div class="flex-1">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="sim-difficulty sim-difficulty-{{ attack.difficulty|lower }}">{{ attack.difficulty }}</span>
+        {% if completed %}<span class="sim-completed-tag inline">Previously completed</span>{% endif %}
+      </div>
+      <h2 class="mt-3 text-3xl font-extrabold text-white">{{ attack.name }} Simulation</h2>
+      <p class="mt-3 max-w-3xl text-base leading-8 text-slate-300">{{ attack.overview.explanation }}</p>
+    </div>
+  </div>
+</section>
+
+<div class="mt-6 grid gap-5 xl:grid-cols-2">
+  <section class="sim-panel">
+    <h3 class="sim-panel-title">Why attackers use it</h3>
+    <p class="sim-panel-text">{{ attack.overview.why_used }}</p>
+    <h3 class="sim-panel-title mt-6">How you might encounter it</h3>
+    <p class="sim-panel-text">{{ attack.overview.how_encountered }}</p>
+  </section>
+
+  <section class="sim-panel">
+    <h3 class="sim-panel-title">How it happens</h3>
+    <ol class="sim-numbered-list">
+      {% for step in attack.overview.how_it_happens %}
+      <li>{{ step }}</li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <section class="sim-panel">
+    <h3 class="sim-panel-title">Warning signs</h3>
+    <ul class="sim-bullet-list">
+      {% for sign in attack.overview.warning_signs %}
+      <li>{{ sign }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="sim-panel">
+    <h3 class="sim-panel-title">Prevention tips</h3>
+    <ul class="sim-bullet-list sim-bullet-list-good">
+      {% for tip in attack.overview.prevention_tips %}
+      <li>{{ tip }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+
+<section class="sim-cta-bar mt-8">
+  <div>
+    <div class="text-sm font-semibold text-white">Ready to practice?</div>
+    <p class="mt-1 text-sm text-slate-400">The interactive scenario begins only after you click Start Simulation.</p>
+  </div>
+  <a href="{{ url_for('simulation_start_page', attack_id=attack.id) }}" class="sim-primary-btn">Start Simulation</a>
+</section>
+{% endblock %}

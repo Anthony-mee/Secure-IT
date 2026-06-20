@@ -12,16 +12,9 @@ from database import (
     get_user_by_verification_token,
     is_gmail_address,
     update_user_by_email,
-    upsert_facebook_user,
     upsert_firebase_user,
 )
 from cloudinary_uploader import upload_profile_picture
-from facebook_auth import (
-    build_facebook_login_url,
-    exchange_facebook_code,
-    fetch_facebook_profile,
-    is_facebook_configured,
-)
 from firebase_auth import get_firebase_web_config, verify_firebase_id_token
 from mailer import send_verification_email
 
@@ -64,7 +57,6 @@ def login_page():
         "login.html",
         message=message,
         firebase_config=get_firebase_web_config(),
-        facebook_enabled=is_facebook_configured(),
     )
 
 
@@ -168,56 +160,6 @@ def verify_email_page(token: str):
         },
     )
     _start_session({**user, "email_verified": True})
-    return redirect(url_for("dashboard_page"))
-
-
-def social_login_page(provider: str):
-    abort(404)
-
-
-def facebook_login_page():
-    if not is_facebook_configured():
-        return redirect(url_for("login_page", register_error="Facebook login is not configured yet."))
-
-    state = secrets.token_urlsafe(32)
-    session["facebook_oauth_state"] = state
-    redirect_uri = url_for("facebook_callback_page", _external=True)
-    return redirect(build_facebook_login_url(state=state, redirect_uri=redirect_uri))
-
-
-def facebook_callback_page():
-    if not is_facebook_configured():
-        return redirect(url_for("login_page", register_error="Facebook login is not configured yet."))
-
-    error = request.args.get("error")
-    if error:
-        return redirect(url_for("login_page", register_error="Facebook sign-in was cancelled."))
-
-    state = request.args.get("state", "")
-    code = request.args.get("code", "")
-    expected_state = session.pop("facebook_oauth_state", "")
-    if not code or not state or state != expected_state:
-        return redirect(url_for("login_page", register_error="Facebook sign-in failed. Please try again."))
-
-    redirect_uri = url_for("facebook_callback_page", _external=True)
-    access_token = exchange_facebook_code(code=code, redirect_uri=redirect_uri)
-    if not access_token:
-        return redirect(url_for("login_page", register_error="Could not verify Facebook login."))
-
-    profile = fetch_facebook_profile(access_token)
-    if not profile:
-        return redirect(url_for("login_page", register_error="Could not load your Facebook profile."))
-
-    user = upsert_facebook_user(
-        facebook_id=profile["facebook_id"],
-        email=profile["email"],
-        name=profile["name"],
-        profile_picture=profile["profile_picture"],
-    )
-    if not user:
-        return redirect(url_for("login_page", register_error="Could not sign in with Facebook right now."))
-
-    _start_session(user)
     return redirect(url_for("dashboard_page"))
 
 

@@ -1,0 +1,64 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<section class="admin-card">
+  <h3 class="admin-card-label">User monitoring</h3>
+  <div class="mt-4 overflow-x-auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Completed simulations</th>
+          <th>Current progress</th>
+          <th>Latest simulation</th>
+          <th>Score</th>
+          <th>Time spent</th>
+          <th>Top mistake</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>
+            <div class="font-semibold text-white">{{ user.username }}</div>
+            <div class="text-xs text-slate-400">{{ user.email }}</div>
+          </td>
+          <td>{{ user.completed_simulations }}</td>
+          <td>{{ user.current_progress }}</td>
+          <td>{{ user.latest_simulation }}</td>
+          <td>{{ user.latest_score }}{% if user.latest_score != '—' %}%{% endif %}</td>
+          <td>{% if user.time_spent %}{{ (user.time_spent // 60) }}m {{ user.time_spent % 60 }}s{% else %}—{% endif %}</td>
+          <td><span class="admin-tag admin-tag-danger">{{ user.mistakes }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="admin-grid-2 mt-4">
+  {% for user in users[:6] %}
+  <div class="admin-card">
+    <div class="admin-card-label">{{ user.username }}</div>
+    <div class="admin-card-value">{{ user.points }} pts</div>
+    <div class="admin-card-meta">{{ user.level }} · {{ user.completed_simulations }} missions completed</div>
+    <div class="mt-4 space-y-2 text-sm">
+      {% for attempt in user.attempt_history %}
+      <div class="rounded-xl border border-white/5 bg-white/5 px-3 py-2">
+        <div class="flex items-center justify-between gap-2">
+          <span>{{ attempt.attack_id }}</span>
+          <span class="admin-tag">{{ attempt.score }}%</span>
+        </div>
+        {% if attempt.mistakes %}
+        <div class="mt-1 text-xs text-rose-200">{{ attempt.mistakes[0] }}</div>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="admin-card-meta">No attempts yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -200,6 +200,85 @@ def get_user_by_email(email: str):
     return collection.find_one({"email": _normalize_email(email)})
 
 
+def list_all_users() -> list[dict]:
+    collection = _users_collection()
+    if collection is None:
+        return []
+
+    return list(collection.find({}, sort=[("updated_at", -1)]))
+
+
+def log_activity(email: str, activity_type: str, details: dict[str, Any] | None = None):
+    db = get_database()
+    if db is None:
+        return
+
+    try:
+        db["activity_logs"].insert_one(
+            {
+                "email": _normalize_email(email),
+                "activity_type": activity_type,
+                "details": details or {},
+                "created_at": _utcnow(),
+            }
+        )
+    except PyMongoError:
+        pass
+
+
+def get_user_simulation_history(email: str, limit: int = 10) -> list[dict]:
+    collection = _simulation_results_collection()
+    if collection is None:
+        return []
+
+    return list(
+        collection.find({"email": _normalize_email(email)}, sort=[("completed_at", -1)]).limit(limit)
+    )
+
+
+def get_user_dashboard_data(email: str) -> dict[str, Any]:
+    user = get_user_by_email(email)
+    history = get_user_simulation_history(email, limit=8)
+    progress = get_user_progress(email)
+    metrics = get_metrics()
+
+    badges = list(DEFAULT_PROFILE.badges)
+    if progress["points"] >= 500:
+        badges.append("Mission Operator")
+    if progress["points"] >= 1500:
+        badges.append("Threat Hunter")
+    if len(progress["simulations_completed"]) >= 3:
+        badges.append("Range Explorer")
+
+    sim_scores = [int(h.get("simulation_score", 0)) for h in history if h.get("simulation_score") is not None]
+    quiz_scores = [int(h.get("quiz_score", 0)) for h in history if h.get("quiz_score") is not None]
+    all_scores = sim_scores + quiz_scores
+    average_score = round(sum(all_scores) / len(all_scores)) if all_scores else metrics.get("average_score", 0)
+
+    completion = round((len(progress["simulations_completed"]) / max(len(list_attack_ids()), 1)) * 100)
+
+    return {
+        "name": user.get("name", "Student") if user else "Student",
+        "points": progress["points"],
+        "level": progress["level"],
+        "completion": min(completion, 100),
+        "badges": badges,
+        "simulations_completed": progress["simulations_completed"],
+        "history": history,
+        "average_score": average_score,
+        "metrics": metrics,
+    }
+
+
+def list_attack_ids() -> list[str]:
+    try:
+        from simulation_data import ATTACKS
+
+        return list(ATTACKS.keys())
+    except ImportError:
+        return []
+
+
 def get_user_by_verification_token(token: str):
     collection = _users_collection()
     if collection is None:
@@ -308,42 +387,6 @@ def ensure_demo_users():
             continue
 
 
-def upsert_social_user(provider: str):
-    collection = _users_collection()
-    if collection is None:
-        return None
-
-    provider = provider.strip().lower()
-    email = f"{provider}@secure-it.local"
-    name = f"{provider.title()} User"
-    existing_user = collection.find_one({"email": email})
-
-    if existing_user:
-        collection.update_one(
-            {"email": email},
-            {"$set": {"updated_at": _utcnow(), "provider": provider}},
-        )
-        return collection.find_one({"email": email})
-
-    document = {
-        "name": name,
-        "email": _normalize_email(email),
-        "password_hash": generate_password_hash(provider + "-demo-login"),
-        "role": "student",
-        "provider": provider,
-        "email_verified": True,
-        "created_at": _utcnow(),
-        "updated_at": _utcnow(),
-    }
-
-    try:
-        collection.insert_one(document)
-    except PyMongoError:
-        return None
-
-    return document
-
-
 def upsert_firebase_user(
     *,
     email: str,
@@ -397,70 +440,6 @@ def upsert_firebase_user(
     return document
 
 
-def get_user_by_facebook_id(facebook_id: str):
-    collection = _users_collection()
-    if collection is None:
-        return None
-
-    return collection.find_one({"facebook_id": str(facebook_id).strip()})
-
-
-def upsert_facebook_user(
-    *,
-    facebook_id: str,
-    email: str,
-    name: str,
-    profile_picture: str = "",
-):
-    collection = _users_collection()
-    if collection is None:
-        return None
-
-    facebook_id = str(facebook_id).strip()
-    normalized_email = _normalize_email(email) if email else f"facebook_{facebook_id}@facebook.secure-it.local"
-    existing_user = collection.find_one({"facebook_id": facebook_id}) or collection.find_one({"email": normalized_email})
-
-    updates = {
-        "name": name.strip(),
-        "provider": "facebook",
-        "facebook_id": facebook_id,
-        "email_verified": True,
-        "updated_at": _utcnow(),
-    }
-    if profile_picture:
-        updates["profile_picture"] = profile_picture
-    if email:
-        updates["email"] = normalized_email
-
-    if existing_user:
-        try:
-            collection.update_one({"_id": existing_user["_id"]}, {"$set": updates})
-        except PyMongoError:
-            return None
-        return collection.find_one({"_id": existing_user["_id"]})
-
-    document = {
-        "name": name.strip(),
-        "email": normalized_email,
-        "password_hash": generate_password_hash(secrets.token_urlsafe(32)),
-        "role": "student",
-        "provider": "facebook",
-        "facebook_id": facebook_id,
-        "year_level": "",
-        "profile_picture": profile_picture,
-        "email_verified": True,
-        "created_at": _utcnow(),
-        "updated_at": _utcnow(),
-    }
-
-    try:
-        collection.insert_one(document)
-    except PyMongoError:
-        return None
-
-    return document
-
-
 def is_gmail_address(email: str) -> bool:
     return _is_gmail_address(email)
 
@@ -468,3 +447,109 @@ def is_gmail_address(email: str) -> bool:
 def ensure_upload_directory() -> Path:
     UPLOAD_DIRECTORY.mkdir(parents=True, exist_ok=True)
     return UPLOAD_DIRECTORY
+
+
+def _simulation_results_collection():
+    collection = _collection("simulation_results")
+    if collection is None:
+        return None
+    try:
+        collection.create_index([("email", 1), ("attack_id", 1), ("completed_at", -1)])
+    except PyMongoError:
+        pass
+    return collection
+
+
+def _level_for_points(points: int) -> str:
+    if points >= 2500:
+        return "Advanced"
+    if points >= 1000:
+        return "Intermediate"
+    return "Beginner"
+
+
+def record_simulation_completion(
+    email: str,
+    attack_id: str,
+    *,
+    simulation_score: int,
+    quiz_score: int | None = None,
+    points_earned: int = 0,
+    mistakes: list | None = None,
+    good_actions: list | None = None,
+    time_spent_seconds: int = 0,
+    actions_log: list | None = None,
+    skills_developed: list | None = None,
+):
+    collection = _users_collection()
+    results = _simulation_results_collection()
+    if collection is None:
+        return None
+
+    normalized_email = _normalize_email(email)
+    user = collection.find_one({"email": normalized_email})
+    if not user:
+        return None
+
+    current_points = int(user.get("points", 0))
+    new_points = current_points + max(points_earned, 0)
+    completed = list(user.get("simulations_completed", []))
+    if attack_id not in completed:
+        completed.append(attack_id)
+
+    updates = {
+        "points": new_points,
+        "level": _level_for_points(new_points),
+        "simulations_completed": completed,
+        "updated_at": _utcnow(),
+    }
+
+    try:
+        collection.update_one({"email": normalized_email}, {"$set": updates})
+    except PyMongoError:
+        return None
+
+    result_doc = {
+        "email": normalized_email,
+        "attack_id": attack_id,
+        "simulation_score": simulation_score,
+        "quiz_score": quiz_score,
+        "points_earned": points_earned,
+        "mistakes": mistakes or [],
+        "good_actions": good_actions or [],
+        "time_spent_seconds": time_spent_seconds,
+        "actions_log": actions_log or [],
+        "skills_developed": skills_developed or [],
+        "completed_at": _utcnow(),
+    }
+
+    if results is not None:
+        try:
+            results.insert_one(result_doc)
+        except PyMongoError:
+            pass
+
+    log_activity(
+        normalized_email,
+        "simulation_completed",
+        {
+            "attack_id": attack_id,
+            "simulation_score": simulation_score,
+            "quiz_score": quiz_score,
+            "mistakes": mistakes or [],
+        },
+    )
+
+    return collection.find_one({"email": normalized_email})
+
+
+def get_user_progress(email: str) -> dict[str, Any]:
+    user = get_user_by_email(email)
+    if not user:
+        return {"points": 0, "level": "Beginner", "simulations_completed": []}
+
+    return {
+        "points": int(user.get("points", 0)),
+        "level": str(user.get("level", _level_for_points(int(user.get("points", 0))))),
+        "simulations_completed": list(user.get("simulations_completed", [])),
+    }

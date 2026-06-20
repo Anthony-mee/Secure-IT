@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/simulations.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/workspace.css') }}">
+{% endblock %}
+{% block content %}
+<section class="sim-breadcrumb">
+  <a href="{{ url_for('simulations_page') }}">← Cyber Range</a>
+</section>
+
+<section class="mission-briefing-hero">
+  <div class="flex flex-wrap items-start gap-5">
+    <div class="sim-attack-icon sim-attack-icon-lg">{{ mission.icon }}</div>
+    <div class="flex-1">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="sim-badge">Mission briefing</span>
+        <span class="sim-difficulty sim-difficulty-{{ mission.difficulty|lower }}">{{ mission.difficulty }}</span>
+        <span class="mission-meta-pill">~{{ mission.estimated_minutes }} min</span>
+        {% if completed %}<span class="sim-completed-tag inline">Previously completed</span>{% endif %}
+      </div>
+      <h2 class="mt-3 text-3xl font-extrabold text-white">{{ mission.mission_title }}</h2>
+      <p class="mt-4 max-w-3xl text-base leading-8 text-slate-300">{{ mission.story }}</p>
+    </div>
+  </div>
+</section>
+
+<div class="mt-6 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+  <section class="sim-panel">
+    <h3 class="sim-panel-title">Mission objectives</h3>
+    <ul class="mission-objective-list mt-4">
+      {% for objective in mission.objectives %}
+      <li><span class="mission-check">☐</span> {{ objective }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="sim-panel">
+    <h3 class="sim-panel-title">Available tools</h3>
+    <div class="mission-tools-grid mt-4">
+      {% for tool in mission.tools %}
+      <div class="mission-tool-chip">{{ tool.replace('_', ' ') }}</div>
+      {% endfor %}
+    </div>
+    <h3 class="sim-panel-title mt-6">Skills developed</h3>
+    <div class="mt-3 flex flex-wrap gap-2">
+      {% for skill in mission.skills_learned %}
+      <span class="mission-skill-tag">{{ skill }}</span>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<section class="sim-panel mt-5">
+  <h3 class="sim-panel-title">Scenario intel</h3>
+  <p class="sim-panel-text">{{ mission.short_description or mission.story }}</p>
+</section>
+
+<section class="sim-cta-bar mt-8">
+  <a href="{{ url_for('simulations_page') }}" class="sim-secondary-btn">Choose another mission</a>
+  <a href="{{ url_for('simulation_start_page', attack_id=mission.attack_id) }}" class="sim-primary-btn mission-start-btn">Start Challenge</a>
+</section>
+{% endblock %}

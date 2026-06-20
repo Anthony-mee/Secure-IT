@@ -80,46 +80,53 @@ def create_app():
     except ValueError:
         app.config["EMAIL_VERIFY_TTL_HOURS"] = 24
 
-    from .routes.admin import admin_page
+    from .routes.admin import admin_page, admin_users_page
     from .routes.auth import (
-        facebook_callback_page,
-        facebook_login_page,
         firebase_login,
         login_page,
         logout_page,
         register_page,
-        social_login_page,
         verify_email_page,
     )
     from .routes.dashboard import dashboard_page
     from .routes.landing import landing_page
     from .routes.profile import profile_page
     from .routes.quizzes import quizzes_page
-    from .routes.simulations import simulations_page
+    from .routes.simulations import (
+        simulation_complete_page,
+        simulation_overview_page,
+        simulation_play_page,
+        simulation_quiz_page,
+        simulation_quiz_submit_page,
+        simulation_results_page,
+        simulation_start_page,
+        simulations_page,
+    )
 
     app.add_url_rule("/", endpoint="landing_page", view_func=landing_page)
     app.add_url_rule("/login", methods=["GET", "POST"], endpoint="login_page", view_func=login_page)
     app.add_url_rule("/register", methods=["POST"], endpoint="register_page", view_func=register_page)
     app.add_url_rule("/auth/firebase", methods=["POST"], endpoint="firebase_login", view_func=firebase_login)
-    app.add_url_rule("/auth/facebook", methods=["GET"], endpoint="facebook_login_page", view_func=facebook_login_page)
-    app.add_url_rule("/auth/facebook/callback", methods=["GET"], endpoint="facebook_callback_page", view_func=facebook_callback_page)
-    app.add_url_rule("/social/<provider>", methods=["GET"], endpoint="social_login_page", view_func=social_login_page)
     app.add_url_rule("/verify-email/<token>", methods=["GET"], endpoint="verify_email_page", view_func=verify_email_page)
     app.add_url_rule("/dashboard", endpoint="dashboard_page", view_func=dashboard_page)
     app.add_url_rule("/profile", methods=["GET", "POST"], endpoint="profile_page", view_func=profile_page)
     app.add_url_rule("/simulations", endpoint="simulations_page", view_func=simulations_page)
+    app.add_url_rule("/simulations/<attack_id>", endpoint="simulation_overview_page", view_func=simulation_overview_page)
+    app.add_url_rule("/simulations/<attack_id>/start", endpoint="simulation_start_page", view_func=simulation_start_page)
+    app.add_url_rule("/simulations/<attack_id>/play", endpoint="simulation_play_page", view_func=simulation_play_page)
+    app.add_url_rule("/simulations/<attack_id>/complete", methods=["POST"], endpoint="simulation_complete_page", view_func=simulation_complete_page)
+    app.add_url_rule("/simulations/<attack_id>/results", endpoint="simulation_results_page", view_func=simulation_results_page)
+    app.add_url_rule("/simulations/<attack_id>/quiz", endpoint="simulation_quiz_page", view_func=simulation_quiz_page)
+    app.add_url_rule("/simulations/<attack_id>/quiz/submit", methods=["POST"], endpoint="simulation_quiz_submit_page", view_func=simulation_quiz_submit_page)
     app.add_url_rule("/quizzes", endpoint="quizzes_page", view_func=quizzes_page)
     app.add_url_rule("/admin", endpoint="admin_page", view_func=admin_page)
+    app.add_url_rule("/admin/users", endpoint="admin_users_page", view_func=admin_users_page)
     app.add_url_rule("/logout", endpoint="logout_page", view_func=logout_page)
 
     from firebase_auth import get_firebase_web_config
-    from facebook_auth import is_facebook_configured
 
     @app.context_processor
     def inject_firebase_config():
-        return {
-            "firebase_config": get_firebase_web_config(),
-            "facebook_enabled": is_facebook_configured(),
-        }
+        return {"firebase_config": get_firebase_web_config()}
 
     return app

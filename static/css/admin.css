@@ -1,0 +1,245 @@
+.admin-body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Manrope', sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(16, 185, 129, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.08), transparent 24%),
+    linear-gradient(180deg, #020617 0%, #0f172a 45%, #111827 100%);
+  color: #e5e7eb;
+}
+
+.admin-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.admin-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.18);
+  background: rgba(2, 6, 23, 0.92);
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.admin-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.85rem;
+  background: linear-gradient(135deg, #059669, #d97706);
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  color: #020617;
+}
+
+.admin-brand-title {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.admin-brand-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.admin-topnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-nav-link {
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.admin-nav-link.is-active,
+.admin-nav-link:hover {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+  color: #ecfdf5;
+}
+
+.admin-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 0;
+}
+
+.admin-kicker {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6ee7b7;
+}
+
+.admin-page-title {
+  margin-top: 0.35rem;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.admin-page-sub {
+  margin-top: 0.35rem;
+  color: #94a3b8;
+}
+
+.admin-status-pill {
+  padding: 0.45rem 0.8rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.1);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: #6ee7b7;
+}
+
+.admin-main {
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+.admin-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.admin-grid-4 {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.admin-grid-2 {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.admin-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.82);
+  padding: 1rem 1.1rem;
+}
+
+.admin-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.admin-card-value {
+  margin-top: 0.55rem;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.admin-card-meta {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.admin-bar-chart {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-bar-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 42px;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.admin-bar-track {
+  height: 0.55rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.admin-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #059669, #f59e0b);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.75rem 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.admin-tag {
+  display: inline-flex;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #a7f3d0;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.admin-tag-warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fde68a;
+}
+
+.admin-tag-danger {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fecdd3;
+}
+
+.admin-awareness-ring {
+  display: grid;
+  place-items: center;
+  width: 140px;
+  height: 140px;
+  margin-inline: auto;
+  border-radius: 9999px;
+  border: 6px solid rgba(16, 185, 129, 0.25);
+  font-size: 2rem;
+  font-weight: 900;
+}
