@@ -18,14 +18,24 @@ if load_dotenv is not None:
     load_dotenv(BASE_DIR / ".env")
 
 
+def normalize_role(role) -> str:
+    return str(role or "student").strip().lower()
+
+
+def is_admin_role(role) -> bool:
+    return normalize_role(role) == "admin"
+
+
 def make_layout(active_page: str, title: str, subtitle: str, content_template: str, **context):
+    user_role = normalize_role(session.get("user_role", "guest"))
     base_context = {
         "active_page": active_page,
         "title": title,
         "subtitle": subtitle,
         "year": datetime.now().year,
         "is_logged_in": session.get("logged_in", False),
-        "user_role": session.get("user_role", "guest"),
+        "user_role": user_role,
+        "is_admin": is_admin_role(user_role),
         "display_name": session.get("display_name", "Guest"),
         "year_level": session.get("year_level", ""),
         "profile_picture": session.get("profile_picture", ""),
@@ -50,7 +60,7 @@ def admin_required(view):
     def wrapped_view(*args, **kwargs):
         if not session.get("logged_in"):
             return redirect(url_for("login_page"))
-        if session.get("user_role") != "admin":
+        if not is_admin_role(session.get("user_role")):
             return redirect(url_for("dashboard_page"))
         return view(*args, **kwargs)
 
@@ -71,21 +81,45 @@ def create_app():
         app.config["EMAIL_VERIFY_TTL_HOURS"] = 24
 
     from .routes.admin import admin_page
-    from .routes.auth import login_page, logout_page, register_page, social_login_page, verify_email_page
+    from .routes.auth import (
+        facebook_callback_page,
+        facebook_login_page,
+        firebase_login,
+        login_page,
+        logout_page,
+        register_page,
+        social_login_page,
+        verify_email_page,
+    )
     from .routes.dashboard import dashboard_page
     from .routes.landing import landing_page
+    from .routes.profile import profile_page
     from .routes.quizzes import quizzes_page
     from .routes.simulations import simulations_page
 
     app.add_url_rule("/", endpoint="landing_page", view_func=landing_page)
     app.add_url_rule("/login", methods=["GET", "POST"], endpoint="login_page", view_func=login_page)
     app.add_url_rule("/register", methods=["POST"], endpoint="register_page", view_func=register_page)
+    app.add_url_rule("/auth/firebase", methods=["POST"], endpoint="firebase_login", view_func=firebase_login)
+    app.add_url_rule("/auth/facebook", methods=["GET"], endpoint="facebook_login_page", view_func=facebook_login_page)
+    app.add_url_rule("/auth/facebook/callback", methods=["GET"], endpoint="facebook_callback_page", view_func=facebook_callback_page)
     app.add_url_rule("/social/<provider>", methods=["GET"], endpoint="social_login_page", view_func=social_login_page)
     app.add_url_rule("/verify-email/<token>", methods=["GET"], endpoint="verify_email_page", view_func=verify_email_page)
     app.add_url_rule("/dashboard", endpoint="dashboard_page", view_func=dashboard_page)
+    app.add_url_rule("/profile", methods=["GET", "POST"], endpoint="profile_page", view_func=profile_page)
     app.add_url_rule("/simulations", endpoint="simulations_page", view_func=simulations_page)
     app.add_url_rule("/quizzes", endpoint="quizzes_page", view_func=quizzes_page)
     app.add_url_rule("/admin", endpoint="admin_page", view_func=admin_page)
     app.add_url_rule("/logout", endpoint="logout_page", view_func=logout_page)
+
+    from firebase_auth import get_firebase_web_config
+    from facebook_auth import is_facebook_configured
+
+    @app.context_processor
+    def inject_firebase_config():
+        return {
+            "firebase_config": get_firebase_web_config(),
+            "facebook_enabled": is_facebook_configured(),
+        }
 
     return app

@@ -14,8 +14,8 @@
       </div>
       <div class="rounded-3xl border border-white/10 bg-slate-950/60 p-5">
         <div class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Training mode</div>
-        <div class="mt-3 text-lg font-bold text-white">Demo + social login</div>
-        <p class="mt-2 text-sm leading-6 text-slate-300">Google and Facebook buttons open a popup login window.</p>
+        <div class="mt-3 text-lg font-bold text-white">Google + social login</div>
+        <p class="mt-2 text-sm leading-6 text-slate-300">Google uses Firebase. Facebook uses Meta login for any Facebook account.</p>
       </div>
     </div>
   </div>
@@ -33,17 +33,19 @@
 
     <div class="mt-4 flex items-center justify-between gap-3">
       <button type="button" onclick="openRegisterModal()" class="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 font-semibold text-slate-100 transition hover:bg-white/10">Register</button>
-      <button type="button" onclick="openSocialLogin('google')" class="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:bg-white/15" title="Sign in with Google">
+      <button type="button" id="google-login-btn" class="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50" title="Sign in with Google">
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
           <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.493 2.84-8.28 0-.56-.053-1.1-.135-1.62H12.48z"/>
         </svg>
       </button>
-      <button type="button" onclick="openSocialLogin('facebook')" class="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:bg-white/15" title="Sign in with Facebook">
+      <a href="{{ url_for('facebook_login_page') if facebook_enabled else '#' }}" id="facebook-login-btn" class="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/5 transition hover:bg-white/15 {% if not facebook_enabled %}pointer-events-none opacity-50{% endif %}" title="{% if facebook_enabled %}Sign in with Facebook{% else %}Facebook login not configured{% endif %}">
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
         </svg>
-      </button>
+      </a>
     </div>
+
+    <div id="google-login-error" class="mt-4 hidden rounded-2xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm font-medium text-rose-100"></div>
 
     {% if message %}
     <div class="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-medium text-emerald-100">{{ message }}</div>
@@ -149,14 +151,6 @@
     modal.classList.remove('flex');
   }
 
-  function openSocialLogin(provider) {
-    const width = 520;
-    const height = 640;
-    const left = Math.max(0, Math.round((window.screen.width - width) / 2));
-    const top = Math.max(0, Math.round((window.screen.height - height) / 2));
-    window.open(`/social/${provider}`, `${provider}Login`, `width=${width},height=${height},left=${left},top=${top}`);
-  }
-
   const profilePictureInput = document.getElementById('profile-picture-input');
   const profilePreview = document.getElementById('profile-preview');
   const profilePreviewPlaceholder = document.getElementById('profile-preview-placeholder');
@@ -237,4 +231,58 @@
     openRegisterModal();
   }
 </script>
+{% if firebase_config %}
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
+  const firebaseConfig = {{ firebase_config | tojson }};
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+  const googleLoginBtn = document.getElementById('google-login-btn');
+  const googleLoginError = document.getElementById('google-login-error');
+
+  function showGoogleLoginError(message) {
+    if (!googleLoginError) return;
+    googleLoginError.textContent = message;
+    googleLoginError.classList.remove('hidden');
+  }
+
+  googleLoginBtn?.addEventListener('click', async () => {
+    googleLoginError?.classList.add('hidden');
+    googleLoginBtn.disabled = true;
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      const response = await fetch('{{ url_for("firebase_login") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Google sign-in failed.');
+      }
+      window.location.href = data.redirect || '{{ url_for("dashboard_page") }}';
+    } catch (error) {
+      const message = error?.code === 'auth/popup-closed-by-user'
+        ? 'Google sign-in was cancelled.'
+        : (error.message || 'Google sign-in failed.');
+      showGoogleLoginError(message);
+    } finally {
+      googleLoginBtn.disabled = false;
+    }
+  });
+</script>
+{% else %}
+<script>
+  document.getElementById('google-login-btn')?.addEventListener('click', () => {
+    const googleLoginError = document.getElementById('google-login-error');
+    if (!googleLoginError) return;
+    googleLoginError.textContent = 'Google sign-in is not configured. Restart the server after updating Firebase settings in .env.';
+    googleLoginError.classList.remove('hidden');
+  });
+</script>
+{% endif %}
 {% endblock %}

@@ -31,8 +31,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   </head>
   <body class="min-h-screen bg-hero-grid text-slate-100 antialiased">
-    <div class="grid min-h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
-      <aside class="border-r border-white/10 bg-slate-950/90 px-6 py-7 backdrop-blur-xl lg:sticky lg:top-0 lg:h-screen">
+    <div id="app-layout" class="app-layout">
+      <aside id="sidebar" class="sidebar border-r border-white/10 bg-slate-950/90 px-6 py-7 backdrop-blur-xl lg:sticky lg:top-0 lg:h-screen">
         <div class="mb-8 flex items-center gap-4">
           <div class="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-mint to-emerald-200 font-black text-slate-950 shadow-glow">S</div>
           <div>
@@ -42,13 +42,15 @@
         </div>
 
         <nav class="space-y-2 text-sm font-semibold">
+          {% if not is_logged_in %}
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'landing' %}border-cyan-300/40 bg-cyan-300/10 text-cyan-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('landing_page') }}">Preview</a>
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'login' %}border-emerald-300/40 bg-emerald-300/10 text-emerald-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('login_page') }}">Login</a>
+          {% endif %}
           {% if is_logged_in %}
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'dashboard' %}border-cyan-300/40 bg-cyan-300/10 text-cyan-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('dashboard_page') }}">Dashboard</a>
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'simulations' %}border-cyan-300/40 bg-cyan-300/10 text-cyan-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('simulations_page') }}">Simulations</a>
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'quizzes' %}border-cyan-300/40 bg-cyan-300/10 text-cyan-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('quizzes_page') }}">Quizzes</a>
-          {% if user_role == 'admin' %}
+          {% if is_admin %}
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'admin' %}border-amber-300/40 bg-amber-300/10 text-amber-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('admin_page') }}">Admin</a>
           {% endif %}
           <a class="block rounded-2xl border px-4 py-3 transition border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10" href="{{ url_for('logout_page') }}">Logout</a>
@@ -63,12 +65,13 @@
             {% else %}
             <div class="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-mint to-cyan text-lg font-black text-slate-950">{{ display_name[:1] if display_name else 'G' }}</div>
             {% endif %}
-            <div>
-              <div class="text-xl font-extrabold text-white">{{ display_name if is_logged_in else (profile.name if profile else 'Guest Preview') }}</div>
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-xl font-extrabold text-white">{{ display_name if is_logged_in else (profile.name if profile else 'Guest Preview') }}</div>
               <div class="mt-1 text-sm text-slate-400">{{ year_level if is_logged_in and year_level else (profile.level if profile and is_logged_in else 'Preview mode') }}</div>
             </div>
           </div>
           {% if is_logged_in %}
+          <a href="{{ url_for('profile_page') }}" class="mt-4 inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-white/20 hover:bg-white/10">Edit profile</a>
           <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
             <div class="h-full rounded-full bg-gradient-to-r from-mint to-cyan" style="width: {{ profile.completion if profile else 68 }}%;"></div>
           </div>
@@ -82,7 +85,13 @@
         </div>
       </aside>
 
-      <main class="px-5 py-7 sm:px-6 lg:px-8">
+      <button type="button" id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle sidebar" aria-expanded="true" title="Hide sidebar">
+        <svg class="sidebar-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+
+      <main class="main-content px-5 py-7 sm:px-6 lg:px-8">
         <header class="mb-8 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div class="max-w-3xl">
             <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-100">Secure-IT Platform</div>
@@ -100,5 +109,29 @@
         <footer class="mt-8 border-t border-white/10 pt-5 text-sm text-slate-500">Built for the Secure-IT concept. Year {{ year }}.</footer>
       </main>
     </div>
+
+    <script>
+      (function () {
+        const layout = document.getElementById('app-layout');
+        const toggle = document.getElementById('sidebar-toggle');
+        const storageKey = 'secure-it-sidebar-collapsed';
+
+        function setCollapsed(collapsed) {
+          layout.classList.toggle('sidebar-collapsed', collapsed);
+          toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+          toggle.title = collapsed ? 'Show sidebar' : 'Hide sidebar';
+        }
+
+        if (localStorage.getItem(storageKey) === '1') {
+          setCollapsed(true);
+        }
+
+        toggle.addEventListener('click', function () {
+          const collapsed = !layout.classList.contains('sidebar-collapsed');
+          setCollapsed(collapsed);
+          localStorage.setItem(storageKey, collapsed ? '1' : '0');
+        });
+      })();
+    </script>
   </body>
 </html>

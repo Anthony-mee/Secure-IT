@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import os
+import secrets
 from pathlib import Path
 from functools import lru_cache
 from typing import Any
@@ -330,6 +331,123 @@ def upsert_social_user(provider: str):
         "password_hash": generate_password_hash(provider + "-demo-login"),
         "role": "student",
         "provider": provider,
+        "email_verified": True,
+        "created_at": _utcnow(),
+        "updated_at": _utcnow(),
+    }
+
+    try:
+        collection.insert_one(document)
+    except PyMongoError:
+        return None
+
+    return document
+
+
+def upsert_firebase_user(
+    *,
+    email: str,
+    name: str,
+    profile_picture: str = "",
+    firebase_uid: str = "",
+    provider: str = "google",
+):
+    collection = _users_collection()
+    if collection is None:
+        return None
+
+    normalized_email = _normalize_email(email)
+    existing_user = collection.find_one({"email": normalized_email})
+    updates = {
+        "name": name.strip(),
+        "provider": provider.strip().lower(),
+        "email_verified": True,
+        "firebase_uid": firebase_uid,
+        "updated_at": _utcnow(),
+    }
+    if profile_picture:
+        updates["profile_picture"] = profile_picture
+
+    if existing_user:
+        try:
+            collection.update_one({"email": normalized_email}, {"$set": updates})
+        except PyMongoError:
+            return None
+        return collection.find_one({"email": normalized_email})
+
+    document = {
+        "name": name.strip(),
+        "email": normalized_email,
+        "password_hash": generate_password_hash(secrets.token_urlsafe(32)),
+        "role": "student",
+        "provider": provider.strip().lower(),
+        "year_level": "",
+        "profile_picture": profile_picture,
+        "email_verified": True,
+        "firebase_uid": firebase_uid,
+        "created_at": _utcnow(),
+        "updated_at": _utcnow(),
+    }
+
+    try:
+        collection.insert_one(document)
+    except PyMongoError:
+        return None
+
+    return document
+
+
+def get_user_by_facebook_id(facebook_id: str):
+    collection = _users_collection()
+    if collection is None:
+        return None
+
+    return collection.find_one({"facebook_id": str(facebook_id).strip()})
+
+
+def upsert_facebook_user(
+    *,
+    facebook_id: str,
+    email: str,
+    name: str,
+    profile_picture: str = "",
+):
+    collection = _users_collection()
+    if collection is None:
+        return None
+
+    facebook_id = str(facebook_id).strip()
+    normalized_email = _normalize_email(email) if email else f"facebook_{facebook_id}@facebook.secure-it.local"
+    existing_user = collection.find_one({"facebook_id": facebook_id}) or collection.find_one({"email": normalized_email})
+
+    updates = {
+        "name": name.strip(),
+        "provider": "facebook",
+        "facebook_id": facebook_id,
+        "email_verified": True,
+        "updated_at": _utcnow(),
+    }
+    if profile_picture:
+        updates["profile_picture"] = profile_picture
+    if email:
+        updates["email"] = normalized_email
+
+    if existing_user:
+        try:
+            collection.update_one({"_id": existing_user["_id"]}, {"$set": updates})
+        except PyMongoError:
+            return None
+        return collection.find_one({"_id": existing_user["_id"]})
+
+    document = {
+        "name": name.strip(),
+        "email": normalized_email,
+        "password_hash": generate_password_hash(secrets.token_urlsafe(32)),
+        "role": "student",
+        "provider": "facebook",
+        "facebook_id": facebook_id,
+        "year_level": "",
+        "profile_picture": profile_picture,
         "email_verified": True,
         "created_at": _utcnow(),
         "updated_at": _utcnow(),

@@ -7,7 +7,11 @@
     <p class="mt-5 max-w-2xl text-base leading-8 text-slate-300">Train learners with phishing challenges, password labs, social engineering scenarios, and a clean progress dashboard that feels like a modern security product.</p>
 
     <div class="mt-8 flex flex-wrap gap-3">
+      {% if is_logged_in %}
+      <a href="{{ url_for('dashboard_page') }}" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-mint to-cyan px-5 py-3 text-sm font-extrabold text-slate-950 transition hover:scale-[1.02]">Go to dashboard</a>
+      {% else %}
       <a href="{{ url_for('login_page') }}" class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-mint to-cyan px-5 py-3 text-sm font-extrabold text-slate-950 transition hover:scale-[1.02]">Log in to dashboard</a>
+      {% endif %}
       <a href="{{ url_for('simulations_page') }}" class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/10">View simulations</a>
     </div>
 
