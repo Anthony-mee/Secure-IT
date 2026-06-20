@@ -74,6 +74,7 @@ def create_app():
     from .routes.auth import login_page, logout_page, register_page, social_login_page, verify_email_page
     from .routes.dashboard import dashboard_page
     from .routes.landing import landing_page
+    from .routes.profile import profile_page
     from .routes.quizzes import quizzes_page
     from .routes.simulations import simulations_page
 
@@ -83,6 +84,7 @@ def create_app():
     app.add_url_rule("/social/<provider>", methods=["GET"], endpoint="social_login_page", view_func=social_login_page)
     app.add_url_rule("/verify-email/<token>", methods=["GET"], endpoint="verify_email_page", view_func=verify_email_page)
     app.add_url_rule("/dashboard", endpoint="dashboard_page", view_func=dashboard_page)
+    app.add_url_rule("/profile", methods=["GET", "POST"], endpoint="profile_page", view_func=profile_page)
     app.add_url_rule("/simulations", endpoint="simulations_page", view_func=simulations_page)
     app.add_url_rule("/quizzes", endpoint="quizzes_page", view_func=quizzes_page)
     app.add_url_rule("/admin", endpoint="admin_page", view_func=admin_page)
