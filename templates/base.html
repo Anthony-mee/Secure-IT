@@ -42,8 +42,10 @@
         </div>
 
         <nav class="space-y-2 text-sm font-semibold">
+          {% if not is_logged_in %}
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'landing' %}border-cyan-300/40 bg-cyan-300/10 text-cyan-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('landing_page') }}">Preview</a>
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'login' %}border-emerald-300/40 bg-emerald-300/10 text-emerald-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('login_page') }}">Login</a>
+          {% endif %}
           {% if is_logged_in %}
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'dashboard' %}border-cyan-300/40 bg-cyan-300/10 text-cyan-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('dashboard_page') }}">Dashboard</a>
           <a class="block rounded-2xl border px-4 py-3 transition {% if active_page == 'simulations' %}border-cyan-300/40 bg-cyan-300/10 text-cyan-100 {% else %}border-white/5 bg-white/5 text-slate-200 hover:border-white/10 hover:bg-white/10{% endif %}" href="{{ url_for('simulations_page') }}">Simulations</a>
